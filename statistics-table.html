@@ -1,0 +1,73 @@
+<html>
+<head>
+  <meta charset="utf-8">
+</head>
+<body>
+  <style>
+  table {
+    border-collapse: collapse;
+  }
+  tr {
+    border: solid black 1px;
+    cursor: default;
+  }
+  tr:hover {
+    background-color: #F0F0F0;
+  }
+  td {
+    padding: 2px;
+  }
+  td.label {
+    padding-right: 10px;
+  }
+  </style>
+  <script>
+
+  function median(xs) {
+    let i = Math.floor(xs.length / 2)
+    if(xs.length % 2) {
+      return xs[i];
+    }
+    return (xs[i] + xs[i + 1]) / 2
+  }
+
+  // Create array with 16 random element with values in the range [0, 255)
+  let xs = [...Array(16)]
+    .map(() => Math.floor(Math.random() * 256))
+    // Sort the array in ascending order
+    .sort((a, b) => a - b);
+
+  // Display xs in paragraph
+  p = document.createElement('p');
+  p.innerText = "[" + xs.join(", ") + "]";
+  document.body.appendChild(p);
+
+  // Create table with some general info about xs
+  table = document.createElement('table');
+  document.body.appendChild(table);
+  // List of pairs with data for each table row
+  [
+    ['Amount', xs.length],
+    ['Mean', xs.reduce((acc, x) => acc + x, 0) / xs.length],
+    ['Median', median(xs)],
+    ['Min', xs.reduce((x, y) => Math.min(x, y))],
+    ['Max', xs.reduce((x, y) => Math.max(x, y))],
+  ].map((x) => {
+    // Create cell containing label
+    let td0 = document.createElement('td');
+    td0.innerText = x[0];
+    td0.className = 'label';
+    // Create cell containing the value
+    let td1 = document.createElement('td');
+    td1.innerText = x[1];
+    // Create table row and append cells
+    let tr = document.createElement('tr');
+    tr.appendChild(td0);
+    tr.appendChild(td1);
+    // Return table row node
+    return tr;
+  }).forEach(x => table.appendChild(x)) // Append rows to table
+
+  </script>
+</body>
+</html>
