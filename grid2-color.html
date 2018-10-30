@@ -1,0 +1,146 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>grid2-color.html</title>
+  </head>
+  <style>
+    .grid {
+	width: 512;
+	height: 512;
+	background-color: #0F0F0F;
+	margin: 17;
+    }
+    .active:hover {
+	background-color: #FFDB0F;
+	color:black;
+    }
+    table {
+	font-family: monospace;
+	font-size: 1.5em;
+	border: solid;
+	border-collapse: collapse;
+    }
+    td {
+	padding: 0.25em;
+    }
+    td.header {
+	border-bottom: solid;
+	font-style: italic;
+    }
+    #color-serialize-rgb {
+	width: 12em;
+    }
+    #color-serialize-hex {
+	width: 6em;
+    }
+  </style>
+  <body style="background-color:#1F1F1F;color:F1F1F1;">
+    <div>
+      <table id="color-serialize-table">
+	<tr>
+	  <td class="header">rgb</td>
+	  <td class="header">hex</td>
+	  <td class="header">normalized</td>
+	</tr>
+	<tr>
+	  <td id="color-serialize-rgb">rgb(0, 0, 0)</td>
+	  <td id="color-serialize-hex">#000000</td>
+	  <td id="color-serialize-norm">{r: 0.000, g: 0.000, b: 0.000}</td>
+	</tr>
+      </table>
+      <div class="grid" id="color-grid"/>
+    </div>
+    <script>
+
+      function flatten(xs) {
+	  return xs.reduce((acc, x) => acc.concat(x), []);
+      }
+
+      function zip(xs, ys) {
+	  return xs.map((x, i) => [x, ys[i]]);
+      }
+
+      class Color {
+	  constructor(components) {
+	      this.components = components;
+	  }
+
+	  get cssRGB() {
+	      return "rgb(" + this.components.join(", ") + ")";
+	  }
+
+	  get cssHex() {
+	      return "#" + this.components
+		  .map(x => x.toString(16).padStart(2, "0"))
+		  .join("");
+	  }
+
+	  get normalized() {
+	      return this.components.map(x => x / 255)
+	  }
+
+	  inverted() {
+	      return new Color(this.components.map(x => 255 - x));
+	  }
+      }
+
+      function createColorGrid() {
+	  let NS = "http://www.w3.org/2000/svg";
+
+	  function selectColor(color) {
+	      function normStr(color) {
+		  return "{" + zip(['r', 'g', 'b'], color.normalized)
+		      .map(x => x[0] + ": " + x[1].toFixed(3))
+		      .join(", ") + "}"
+	      }
+
+	      let t = document.getElementById('color-serialize-table');
+	      t.style.backgroundColor = color.cssRGB;
+	      t.style.color = color.inverted().cssRGB;
+
+	      [[document.getElementById('color-serialize-rgb'), color.cssRGB],
+	       [document.getElementById('color-serialize-hex'), color.cssHex],
+	       [document.getElementById('color-serialize-norm'), normStr(color)]]
+		  .forEach(x => x[0].innerText = x[1]);
+	  }
+
+	  let vwp = document.createElementNS(NS, 'svg');
+	  vwp.setAttribute('viewBox', "0 0 64 64");
+
+	  let lockMouseover = false;
+	  let latestMouseoverColor = null;
+
+	  flatten([...Array(16).keys()].map((ri) => {
+	      return flatten([...Array(16).keys()].map((gi) => {
+		  return [...Array(16).keys()].map((bi) => {
+		      let elm = document.createElementNS(NS, 'rect');
+		      const color = new Color([ri * 17, gi * 17, bi * 17]);
+		      elm.style.fill = color.cssRGB;
+		      elm.x.baseVal.value = (ri % 4) * 16 + gi;
+		      elm.y.baseVal.value = Math.floor(ri / 4) * 16 + bi;
+		      elm.width.baseVal.value = 1;
+		      elm.height.baseVal.value = 1;
+		      elm.onmouseover = () => {
+			  latestMouseoverColor = color;
+			  if(lockMouseover) {
+			      return;
+			  }
+			  selectColor(color);
+		      };
+		      elm.onclick = () => {
+			  lockMouseover = !lockMouseover;
+			  selectColor(latestMouseoverColor);
+		      };
+		      return elm;
+		  })
+	      }))
+	  })).forEach(x => vwp.appendChild(x));
+
+	  return vwp;
+      }
+
+      document.getElementById('color-grid').appendChild(createColorGrid());
+
+    </script>
+  </body>
+</html>
