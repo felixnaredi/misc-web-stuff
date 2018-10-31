@@ -104,20 +104,28 @@
 		  .forEach(x => x[0].innerText = x[1]);
 	  }
 
-	  let vwp = document.createElementNS(NS, 'svg');
-	  vwp.setAttribute('viewBox', "0 0 64 64");
+	  let viewport = document.createElementNS(NS, 'svg');
+	  viewport.setAttribute('viewBox', "0 0 64 64");
 
 	  let lockMouseover = false;
 	  let latestMouseoverColor = null;
 
-	  flatten([...Array(16).keys()].map((ri) => {
+	  let elements = flatten([...Array(16).keys()].map((ri) => {
 	      return flatten([...Array(16).keys()].map((gi) => {
 		  return [...Array(16).keys()].map((bi) => {
 		      let elm = document.createElementNS(NS, 'rect');
+
 		      const color = new Color([ri * 17, gi * 17, bi * 17]);
+		      elm.color = color;
 		      elm.style.fill = color.cssRGB;
-		      elm.x.baseVal.value = (ri % 4) * 16 + gi;
-		      elm.y.baseVal.value = Math.floor(ri / 4) * 16 + bi;
+
+		      const position = [
+			  (ri % 4) * 16 + gi,
+			  Math.floor(ri / 4) * 16 + bi,
+		      ];
+		      elm.position = position;
+		      elm.x.baseVal.value = position[0];
+		      elm.y.baseVal.value = position[1];
 		      elm.width.baseVal.value = 1;
 		      elm.height.baseVal.value = 1;
 		      elm.onmouseover = () => {
@@ -127,16 +135,79 @@
 			  }
 			  selectColor(color);
 		      };
-		      elm.onclick = () => {
-			  lockMouseover = !lockMouseover;
-			  selectColor(latestMouseoverColor);
-		      };
+
 		      return elm;
 		  })
 	      }))
-	  })).forEach(x => vwp.appendChild(x));
+	  }));
+	  elements.forEach(e0 => {
+	      e0.onclick = () => {
+		  if(lockMouseover) {
+		      elements.forEach(e => {
+			  e.x.baseVal.value = e.position[0];
+			  e.y.baseVal.value = e.position[1];
+			  e.width.baseVal.value = 1;
+			  e.height.baseVal.value = 1;
+		      });
+		  } else {
+		      viewport.style.backgroundColor = e0.color
+			  .inverted().cssRGB;
 
-	  return vwp;
+		      // x manip
+		      elements
+			  .filter(e1 => e1.position[0] == e0.position[0])
+			  .forEach(e => {
+			      e.x.baseVal.value = e.position[0] - 2;
+			      e.width.baseVal.value = 5;
+			  });
+
+		      let lx = elements.filter(
+			  e1 => e1.position[0] < e0.position[0]);
+		      let dlx = 192 / lx.length; // 3 * 64 = 192
+		      lx.forEach(e1 => {
+			  e1.x.baseVal.value -= dlx * e1.position[0];
+			  e1.width.value *= 1.5;
+		      });
+
+		      let gx = elements.filter(
+			  e1 => e1.position[0] > e0.position[0]);
+		      let dgx = 192 / gx.length; // 3 * 64 = 192
+		      gx.forEach(e1 => {
+			  e1.x.baseVal.value += 3 - dgx * (e1.position[0] - e0.position[0]);
+			  e1.width.value *= 1.5;
+		      });
+
+		      // y manip
+		      elements
+			  .filter(e1 => e1.position[1] == e0.position[1])
+			  .forEach(e => {
+			      e.y.baseVal.value = e.position[1] - 2;
+			      e.height.baseVal.value = 5;
+			  });
+
+		      let ly = elements.filter(
+			  e1 => e1.position[1] < e0.position[1]);
+		      let dly = 192 / ly.length; // 3 * 64 = 192
+		      ly.forEach(e1 => {
+			  e1.y.baseVal.value -= dly * e1.position[1];
+			  e1.height.value *= 1.5;
+		      });
+
+		      let gy = elements.filter(
+			  e1 => e1.position[1] > e0.position[1]);
+		      let dgy = 192 / gy.length; // 3 * 64 = 192
+		      gy.forEach(e1 => {
+			  e1.y.baseVal.value += 3 - dgy * (e1.position[1] - e0.position[1]);
+			  e1.height.value *= 1.5;
+		      });
+		  }
+		  lockMouseover = !lockMouseover;
+		  selectColor(latestMouseoverColor);
+	      };
+	      viewport.appendChild(e0);
+	  });
+
+	  return viewport;
       }
 
       document.getElementById('color-grid').appendChild(createColorGrid());
